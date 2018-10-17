@@ -13,6 +13,8 @@ public class Bank {
     private long ntransacts = 0;
     private final int initialBalance;
     private final int numAccounts;
+    private boolean flag;
+    private int counter = 0;
 
     public Bank(int numAccounts, int initialBalance) {
         this.initialBalance = initialBalance;
@@ -24,12 +26,15 @@ public class Bank {
         ntransacts = 0;
     }
 
-    public synchronized void transfer(int from, int to, int amount) {
+    public void transfer(int from, int to, int amount) {
 //        accounts[from].waitForAvailableFunds(amount);
         if (accounts[from].withdraw(amount)) {
             accounts[to].deposit(amount);
         }
-        if (shouldTest()) test();
+        if (flag = shouldTest()){
+            Sum sum = new Sum(this);
+            sum.start();
+        }
     }
 
     public void test() {
