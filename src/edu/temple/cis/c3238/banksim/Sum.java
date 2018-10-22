@@ -19,12 +19,7 @@ public class Sum extends Thread{
     
     @Override
     public void run(){
-        try{
-            bank.test();
-        }
-        catch(InterruptedException exception){
-            
-        }
+        bank.test();
     }
     
 }
