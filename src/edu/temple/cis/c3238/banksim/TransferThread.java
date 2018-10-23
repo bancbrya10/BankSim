@@ -18,10 +18,12 @@ class TransferThread extends Thread {
 
     @Override
     public void run() {
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 1000; i++) {///////////////////////////////change 1000 back to 10000
             int toAccount = (int) (bank.size() * Math.random());
-            int amount = (int) (maxAmount * Math.random());
+            int amount = (int) (maxAmount * Math.random());            
             bank.transfer(fromAccount, toAccount, amount);
+            
+            //System.out.println(i);
         }
     }
 }
