@@ -13,7 +13,7 @@ public class Bank {
     private long ntransacts = 0;
     private final int initialBalance;
     private final int numAccounts;
-    private boolean flag;
+    private boolean flag = false;
     private int counter = 0;
 
     public Bank(int numAccounts, int initialBalance) {
@@ -31,9 +31,23 @@ public class Bank {
         if (accounts[from].withdraw(amount)) {
             accounts[to].deposit(amount);
         }
-        if (flag = shouldTest()){
-            Sum sum = new Sum(this);
-            sum.start();
+        // if flag is already set, then we have to test
+        if(flag) {
+            counter++; // increment num of threads that we have waiting
+            waitForFlagFalse();
+        } else {
+            // Otherwise, check if it is time to test
+            // if it is, then wait this thread until counter == numthreads
+            if (shouldTest()) {
+                flag = true;
+                counter++;
+                waitForAllAccounts();
+                Sum sum = new Sum(this);
+                sum.start();
+                counter = 0;
+                flag = false;
+                notifyAll();
+            }
         }
     }
 
@@ -60,9 +74,29 @@ public class Bank {
         return accounts.length;
     }
     
-    
-    public boolean shouldTest() {
-        return ++ntransacts % NTEST == 0;
+    // so that only one account can set flag at any given time
+    synchronized public boolean shouldTest() {
+        return ++ntransacts % NTEST == 0 && !flag;
+    }
+
+    public synchronized void waitForAllAccounts() {
+        while(counter < accounts.length) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+
+            }
+        }
+    }
+
+    public synchronized void waitForFlagFalse() {
+        while(flag) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+
+            }
+        }
     }
 
 }
