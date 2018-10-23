@@ -20,7 +20,7 @@ public class BankSimMain {
         }
 
 //        b.test();
-          System.out.printf("Bank transfer is in the process.\n");
+          System.out.printf("Bank transfer is in process.\n");
     }
 }
 

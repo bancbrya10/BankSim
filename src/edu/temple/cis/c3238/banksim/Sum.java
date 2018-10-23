@@ -9,17 +9,17 @@ package edu.temple.cis.c3238.banksim;
  *
  * @author Bryan
  */
-public class Sum extends Thread{
-    
+public class Sum extends Thread {
+
     private final Bank bank;
-    
-    public Sum(Bank b){
+
+    public Sum(Bank b) {
         bank = b;
     }
-    
+
     @Override
-    public void run(){
+    public synchronized void run() {
         bank.test();
     }
-    
+
 }
