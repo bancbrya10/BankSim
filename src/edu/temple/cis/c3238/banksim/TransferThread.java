@@ -23,7 +23,10 @@ class TransferThread extends Thread {
             int amount = (int) (maxAmount * Math.random());            
             bank.transfer(fromAccount, toAccount, amount);
             
-            //System.out.println(i);
+            //System.out.println(Thread.currentThread().toString() + " i = " + i);
+            if(i == 9999)
+            System.out.println("For loop complete!");
         }
+        //bank.closeBank();
     }
 }
