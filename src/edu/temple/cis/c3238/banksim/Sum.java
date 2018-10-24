@@ -20,9 +20,9 @@ public class Sum extends Thread {
     @Override
     public void run() {
         synchronized(bank){
-        bank.test();
-        bank.setFlagFalse();
-        bank.notifyAll();
+            bank.test();
+            bank.setFlagFalse();
+            bank.notifyAll();
         }
     }
 

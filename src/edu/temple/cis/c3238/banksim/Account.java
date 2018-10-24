@@ -22,22 +22,27 @@ public class Account {
     }
 
     public synchronized boolean withdraw(int amount) {
-        if (amount <= balance) {
-            int currentBalance = balance;
-//            Thread.yield(); // Try to force collision
-            int newBalance = currentBalance - amount;
-            balance = newBalance;
-            return true;
-        } else {
-            return false;
-        }
+        int currentBalance = balance;
+        int newBalance = currentBalance - amount;
+        balance = newBalance;
+        return true;
     }
 
     public synchronized void deposit(int amount) {
         int currentBalance = balance;
-//        Thread.yield();   // Try to force collision
         int newBalance = currentBalance + amount;
         balance = newBalance;
+        notifyAll();
+    }
+
+    public synchronized void waitForBalanceAvailable(int amount) {
+        while(amount > balance && myBank.isOpen()) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+
+            }
+        }
     }
     
     @Override

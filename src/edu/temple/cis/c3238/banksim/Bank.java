@@ -17,6 +17,8 @@ public class Bank {
     private int threadsSleeping = 0;
     private int threadsAwake = 10;
 
+    private boolean isOpen = true;
+
     public Bank(int numAccounts, int initialBalance) {
         this.initialBalance = initialBalance;
         this.numAccounts = numAccounts;
@@ -28,21 +30,58 @@ public class Bank {
     }
 
     public void transfer(int from, int to, int amount) {
-//        accounts[from].waitForAvailableFunds(amount);
-        if (accounts[from].withdraw(amount)) {
-            accounts[to].deposit(amount);
-            System.out.println("transfer has occured");
-        }
+//        synchronized (this) {
+//            this.incrThreadsSleeping();
+//        }
+//        accounts[from].waitForBalanceAvailable(amount);
+//        synchronized (this) {
+//            this.decrThreadsSleeping();
+//            if(waitForTest) {
+//                sleepTransferThread();
+//            }
+//        }
+//        accounts[from].withdraw(amount);
+//        accounts[to].deposit(amount);
 
         if (shouldTest()) {
             waitForTest = true;
-            System.out.println("ntransacts " + ntransacts);
         }
 
         if (waitForTest) {
-        // If test() needs to be ran (waitForTest set to true) this method will
-        // put each thread to sleep and track threadsPutToSleep/Awake
-        sleepTransferThread();
+            // If test() needs to be ran (waitForTest set to true) this method will
+            // put each thread to sleep and track threadsPutToSleep/Awake
+            sleepTransferThread();
+        }
+
+
+        // This doesn't work?!
+//        synchronized (this) {
+//            this.incrThreadsSleeping();
+//        }
+//        accounts[from].waitForBalanceAvailable(amount);
+//        synchronized (this) {
+//            this.decrThreadsSleeping();
+//            this.notifyAll();
+//        }
+//        accounts[from].withdraw(amount);
+//        accounts[to].deposit(amount);
+
+        // But this does?!
+        boolean waitForBalanceWillDeadlock;
+        synchronized (this) {
+            waitForBalanceWillDeadlock = (this.getThreadsAwake() <= 3);
+        }
+        if(!waitForBalanceWillDeadlock) {
+            synchronized (this) {
+                this.incrThreadsSleeping();
+            }
+            accounts[from].waitForBalanceAvailable(amount);
+            synchronized (this) {
+                this.decrThreadsSleeping();
+                this.notifyAll();
+            }
+            accounts[from].withdraw(amount);
+            accounts[to].deposit(amount);
         }
     }
 
@@ -64,12 +103,10 @@ public class Bank {
             System.out.println(Thread.currentThread().toString()
                     + " The bank is in balance");
         }
+        System.out.println("ntrans " + ntransacts);
     }
 
     public synchronized void sleepTransferThread() {
-
-        //System.out.println("threads awake " + this.getThreadsAwake());
-
         //Last thread to wait creates new thread to run test
         if (this.getThreadsAwake() == 1) {
             Sum sum = new Sum(this);
@@ -132,4 +169,19 @@ public class Bank {
         return incrNtransacts() % NTEST == 0;
     }
 
+    public boolean isOpen() {
+        return isOpen;
+    }
+
+    public void closeBank() {
+        synchronized (this) {
+            this.isOpen = false;
+            this.waitForTest = false;
+        }
+        for (int i = 0; i < this.accounts.length; i++) {
+            synchronized (accounts[i]) {
+                accounts[i].notifyAll();
+            }
+        }
+    }
 }
