@@ -9,15 +9,14 @@ public class Bank {
 
     public static final int NTEST = 10;
     private final Account[] accounts;
-    private long ntransacts = 0;
+    private long ntransacts;
     private final int initialBalance;
     private final int numAccounts;
 
     private boolean waitForTest = false;
-    //private int threadsPutToSleep = 0;
     private int threadsSleeping = 0;
     private int threadsAwake = 10;
-
+    private boolean open = true;
 
     public Bank(int numAccounts, int initialBalance) {
         this.initialBalance = initialBalance;
@@ -29,15 +28,31 @@ public class Bank {
         ntransacts = 0;
     }
 
+    synchronized boolean isOpen() {
+        return open;
+    }
+
+    void closeBank() {
+        synchronized (this) {
+            open = false;
+        }
+        for (Account account : accounts) {
+            synchronized (account) {
+                account.notifyAll();
+            }
+        }
+    }
+
     public void transfer(int from, int to, int amount) {
-//        accounts[from].waitForAvailableFunds(amount);
+        //accounts[from].waitForSufficientFunds(amount);
         if (accounts[from].withdraw(amount)) {
             accounts[to].deposit(amount);
-            System.out.println("trasnfer has occured");
         }
+        //System.out.println("transfer has occured");
 
         if (shouldTest()) {
             waitForTest = true;
+            System.out.println("ntransacts " + ntransacts);
         }
 
         if (waitForTest) {
@@ -45,12 +60,10 @@ public class Bank {
             // put each thread to sleep and track threadsPutToSleep/Awake
             sleepTransferThread();
         }
-
     }
 
-    public synchronized void test() {
+    public void test() {
         int sum = 0;
-        System.out.println("Test Start");
         for (Account account : accounts) {
             System.out.printf("%s %s%n",
                     Thread.currentThread().toString(), account.toString());
@@ -66,69 +79,70 @@ public class Bank {
             System.out.println(Thread.currentThread().toString()
                     + " The bank is in balance");
         }
+    }
 
-        //Reset the signal for threads to sleep back to false
-        waitForTest = false;
-        this.setThreadsSleeping(0);
-        //Test is complete, wake up all threads
-        notifyAll();
+    public synchronized void sleepTransferThread() {
+
+        //System.out.println("threads awake " + this.getThreadsAwake());
+        //Last thread to wait creates new thread to run test
+        if (this.getThreadsAwake() == 1) {
+            Sum sum = new Sum(this);
+            sum.start();
+        }
+
+        //Thread is about to wait, adjust count
+        this.incrThreadsSleeping();
+
+        while (waitForTest) {
+            try {
+                this.wait();
+            } catch (InterruptedException ex) {
+            }
+        }
+
+        //Thread has resumed running, adjust count
+        this.decrThreadsSleeping();
+    }
+
+    //Pretty sure I didn't need any of these but to afraid to take them out
+    public int getThreadsSleeping() {
+        return threadsSleeping;
+    }
+
+    public int getThreadsAwake() {
+        return threadsAwake;
+    }
+
+    public void setThreadsSleeping(int i) {
+        this.threadsSleeping = i;
+        this.threadsAwake = NTEST - 0;
+    }
+
+    public void incrThreadsSleeping() {
+        this.threadsSleeping++;
+        this.threadsAwake--;
+    }
+
+    public void decrThreadsSleeping() {
+        this.threadsSleeping--;
+        this.threadsAwake++;
+    }
+
+    public long incrNtransacts() {
+        this.ntransacts++;
+        return ntransacts;
     }
 
     public int size() {
         return accounts.length;
     }
 
+    public void setFlagFalse() {
+        this.waitForTest = false;
+    }
+
     public boolean shouldTest() {
-        return ++ntransacts % NTEST == 0;
+        return incrNtransacts() % NTEST == 0;
     }
 
-    public synchronized void sleepTransferThread() {
-
-        //Threads are put to sleep upon completion of last transfer
-        this.incrThreadsSleeping();
-        
-        //long threadId = Thread.currentThread().getId();
-        //System.out.println("thread " + threadId/*this.getThreadsSleeping()*/ + " put to sleep");
-        System.out.println("thread " + this.getThreadsSleeping() + " put to sleep");
-        System.out.println("thread " + this.getThreadsAwake() + " still awake");
-        System.out.println("ntransactions = " + this.ntransacts);
-
-        //Last thread to sleep creates new thread to run test
-        if (this.getThreadsAwake() == 1 /* this.threadsSleeping == NTEST*/) {
-            System.out.println("Inside Test Condition");
-            Thread t = new Thread(new Sum(this));
-            t.start();
-        }
-
-        while (waitForTest) {
-            try {
-                wait();
-            } catch (InterruptedException ex) {
-            }
-        }
-
-    }
-    
-    public synchronized int getThreadsSleeping() {
-        return threadsSleeping;
-    }
-
-    public synchronized int getThreadsAwake() {
-        return threadsAwake;
-    }
-
-    public synchronized void setThreadsSleeping(int i) {
-        this.threadsSleeping = i;
-        this.threadsAwake = NTEST - 0;
-    }
-
-    public synchronized void incrThreadsSleeping() {
-        this.threadsSleeping++;
-        this.threadsAwake--;
-    }
-
-    public synchronized void decrThreadsSleeping() {
-        this.threadsSleeping--;
-        this.threadsAwake++;
-    }
 }
