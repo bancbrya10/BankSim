@@ -16,7 +16,6 @@ public class Bank {
     private boolean waitForTest = false;
     private int threadsSleeping = 0;
     private int threadsAwake = 10;
-    private Object lock = new Object();
 
     public Bank(int numAccounts, int initialBalance) {
         this.initialBalance = initialBalance;
@@ -37,17 +36,13 @@ public class Bank {
 
         if (shouldTest()) {
             waitForTest = true;
-            System.out.println("waitForTest set to TRUE");
-            System.out.println(ntransacts);
+            System.out.println("ntransacts " + ntransacts);
         }
 
         if (waitForTest) {
         // If test() needs to be ran (waitForTest set to true) this method will
         // put each thread to sleep and track threadsPutToSleep/Awake
         sleepTransferThread();
-        //System.out.println("waitForTest " + waitForTest);
-        //long threadId = Thread.currentThread().getId();
-        //System.out.println("thread " + threadId + " back in service");
         }
     }
 
@@ -69,23 +64,21 @@ public class Bank {
             System.out.println(Thread.currentThread().toString()
                     + " The bank is in balance");
         }
-
     }
 
     public synchronized void sleepTransferThread() {
 
         //System.out.println("threads awake " + this.getThreadsAwake());
 
-        //Last thread to sleep creates new thread to run test
+        //Last thread to wait creates new thread to run test
         if (this.getThreadsAwake() == 1) {
             Sum sum = new Sum(this);
             sum.start();
         }
 
-        //Thread is about to sleep, adjust count
+        //Thread is about to wait, adjust count
         this.incrThreadsSleeping();
         
-        //System.out.println("sleep " + Thread.currentThread().toString());
         while (waitForTest) {
             try {
                 this.wait();
@@ -93,13 +86,12 @@ public class Bank {
             }
         }
         
-
         //Thread has resumed running, adjust count
         this.decrThreadsSleeping();
-        //System.out.println("awake  " + Thread.currentThread().toString());
-
     }
 
+    
+    //Pretty sure I didn't need any of these but to afraid to take them out
     public int getThreadsSleeping() {
         return threadsSleeping;
     }
