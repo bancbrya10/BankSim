@@ -18,8 +18,12 @@ public class Sum extends Thread {
     }
 
     @Override
-    public synchronized void run() {
+    public void run() {
+        synchronized(bank){
         bank.test();
+        bank.setFlagFalse();
+        bank.notifyAll();
+        }
     }
 
 }
